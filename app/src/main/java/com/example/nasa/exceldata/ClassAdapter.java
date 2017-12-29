@@ -12,7 +12,18 @@ public class ClassAdapter
 
     String className;
 
-    public ClassAdapter(String content){
+    public String[] getSub() {
+        return sub;
+    }
+
+    public void setSub(String[] sub) {
+        this.sub = sub;
+    }
+
+    String[] sub;
+
+    public ClassAdapter(String content,String[] a){
         this.className=content;
+        this.sub=a;
     }
 }

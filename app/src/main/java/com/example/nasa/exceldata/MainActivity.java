@@ -13,12 +13,11 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.apache.poi.hssf.usermodel.HSSFDateUtil;
-import org.apache.poi.ss.formula.functions.Column;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -29,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,9 +38,12 @@ public class MainActivity extends AppCompatActivity {
     private String[] FileNameString;
     private File[] listFile;
     File file;
+    String[] subjects;
 
     Button onsdCard,updir;
     ListView internalstorage;
+
+    ArrayList<ClassAdapter> list = new ArrayList<ClassAdapter>();
 
     ArrayList<String> pathHistory;
     String lastDirectory;
@@ -49,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     ArrayList<ClassAdapter> uploadData;
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,17 +132,84 @@ public class MainActivity extends AppCompatActivity {
             FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
             StringBuilder sb = new StringBuilder();
 
+            Row row,row1;
             int column = sheet.getRow(0).getLastCellNum();
-            Toast.makeText(this, ""+column, Toast.LENGTH_SHORT).show();
-            for(int i=1;i<column;i++)
+            Cell cell1;
+            System.out.println("ColumnSize="+column);
+            for(int colIndex=0;colIndex<column;colIndex++)
             {
-                for(int f =1;f<sheet.getLastRowNum();f++)
-                {
-                    stringArrayList.add(String.valueOf(sheet.getRow(i).getCell(f)));
+                String s=String.valueOf(sheet.getRow(0).getCell(colIndex));
+                for (int rowIndex = 1; rowIndex <=sheet.getLastRowNum(); rowIndex++) {
+                    row = sheet.getRow(rowIndex);
+
+                    if (row != null) {
+                        Cell cell = row.getCell(colIndex);
+                        if (cell != null)
+                        {
+                            String dect=getCellAsString(row,colIndex,formulaEvaluator);
+                            if(!dect.equals(""))
+                            {
+                                stringArrayList.add(""+dect);
+                            }
+
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else{
+                        break;
+                    }
+
                 }
+                Log.d(TAG,"STRING LIST="+stringArrayList.size());
+                Log.d(TAG,"FIRST CELL VALUE="+s);
+                subjects=new String[stringArrayList.size()];
+                stringArrayList.toArray(subjects);
+                list.add(new ClassAdapter(s,subjects));
 
             }
-            System.out.println("Array"+stringArrayList.size());
+            for(String s:stringArrayList)
+            {
+                System.out.println("values :"+s);
+            }
+            System.out.println("ClassAdapter_Size="+list.size());
+            System.out.println("ClassAdapter_Value"+list.get(1).getSub().toString());
+            Iterator<ClassAdapter> iterator=list.iterator();
+
+//            int column = sheet.getRow(0).getLastCellNum();
+//            Row row;
+//            Toast.makeText(this, ""+column, Toast.LENGTH_SHORT).show();
+//            for(int i=0;i<sheet.getLastRowNum();i++)
+//            {
+//                row =sheet.getRow(i);
+//                if(row!= null)
+//                {
+//                    Cell cell = row.getCell(i);
+//                    if(cell!=null)
+////                    for(int f =1;f<sheet.getLastRowNum();f++)
+//                    {
+//                        stringArrayList.add(String.valueOf(cell.getNumericCellValue()));
+//                    }
+//                }
+//            }
+//            System.out.println("Array"+stringArrayList.size());
+
+//            Row row;
+//            for (int rowIndex = 0; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+//                row = sheet.getRow(rowIndex);
+//                if (row != null) {
+//                    Cell cell = row.getCell(1);
+//                    if (cell != null) {
+//                        // Found column and there is value in the cell.
+////                        cellValueMaybeNull = cell.getStringCellValue();
+//                        stringArrayList.add(String.valueOf(cell.getStringCellValue()));
+//                        // Do something with the cellValueMaybeNull here ...
+//                    }
+//                }
+//            }
+//            Toast.makeText(this, ""+stringArrayList, Toast.LENGTH_SHORT).show();
 //            for(int r=1;r<rowsCount;r++)
 //            {
 //                Row row = sheet.getRow(r);
@@ -163,7 +234,6 @@ public class MainActivity extends AppCompatActivity {
 //                sb.append(":");
 //            }
             Log.d(TAG, "readExcelData: STRINGBUILDER: "+sb.toString());
-            Toast.makeText(this,sb.toString(), Toast.LENGTH_SHORT).show();
             parseStringBuilder(sb);
         }
         catch(FileNotFoundException e)
@@ -192,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 String cellInfo = "(x,y): ("+x+")";
                 Log.d(TAG, "ParseStringBuilder: Data from row: " +cellInfo);
 
-                uploadData.add(new ClassAdapter(x));
+               // uploadData.add(new ClassAdapter(x));
             }
             catch(NumberFormatException e)
             {
@@ -242,7 +312,12 @@ public class MainActivity extends AppCompatActivity {
                 case Cell.CELL_TYPE_STRING:
                     value = ""+cellValue.getStringValue();
                     break;
+                case Cell.CELL_TYPE_BLANK:
+                    break;
+                case Cell.CELL_TYPE_ERROR:
+                    break;
                 default:
+                    break;
             }
         }
         catch(NullPointerException e)
